@@ -31,7 +31,7 @@ public abstract class BasePage implements InventoryHolder {
     private Inventory inventory;
     protected String name;
     private final GuiYML guiYML;
-    private HashMap<Integer, String> slotStates = new HashMap<>(); 
+    private HashMap<Integer, String> slotStates = new HashMap<>();
     /**
      * @see
      * add all u Content and then use the Call method :o
@@ -43,7 +43,6 @@ public abstract class BasePage implements InventoryHolder {
     protected SuperPlayer owner;
     protected int page = 0;
     protected int pageCount;
-    
     protected BasePage(GuiYML guiYML, SuperPlayer owner) {
         this.guiYML = guiYML;
         this.owner = owner;
@@ -57,14 +56,17 @@ public abstract class BasePage implements InventoryHolder {
         loadDefault();
     }
 
+    public boolean isRemovable() {
+        return guiYML.isRemovable();
+    }
     private <T> List<T> getSubList(List<T> list, int listSize) {
         int startInd = listSize * page;
         int endInd = startInd + listSize < list.size() ? startInd + listSize : list.size();
         return list.subList(startInd, endInd);
     }
-    //Used for for Lists Iterate trough them 
+    //Used for for Lists Iterate trough them
     /**
-     * 
+     *
      * @param <T>
      * @param list
      * @param itemSlotYML
@@ -91,7 +93,7 @@ public abstract class BasePage implements InventoryHolder {
         }
         return inventory;
     }
-    
+
     protected String getState(int slot) {
         return slotStates.get(slot);
     }
@@ -101,11 +103,11 @@ public abstract class BasePage implements InventoryHolder {
         if (itemSlot.isPresent()) {
             return itemSlot.get();
         }
-        
+
         log.warn("Id not Found " + action + "in The YML");
         return null;
     }
-    
+
     protected ItemSlotYML getItemSlot(int slot) {
         Optional<ItemSlotYML> itemSlot = guiYML.getItemSlots().stream().filter(item -> isInSlot(item, slot)).findFirst();
         if (itemSlot.isPresent()) {
@@ -113,7 +115,7 @@ public abstract class BasePage implements InventoryHolder {
         }
         return null;
     }
-    
+
     protected void changeState(int slot, String state) {
         ItemSlotYML itemSlot = getItemSlot(slot);
         if(itemSlot.getStates().get(state) != null) {
@@ -166,16 +168,16 @@ public abstract class BasePage implements InventoryHolder {
         render();
         Gui.getInstance().refreshPage(player, this);
     }
-    
+
     private void returnButton(Player player) {
         Gui gui = Gui.getInstance();
         List<BasePage> history = gui.getHistories().get(player);
         if (history.size() -2 > 0) {
             gui.openPage(player, history.get(history.size() -2));
 
-        }  
+        }
     }
-    
+
     private ItemStack createItem(ItemSlotYML itemSlot,String state) {
         StatesYML statesYML = itemSlot.getStates().get(state);
         ItemStack itemStack = new ItemStack(statesYML.getMaterial());
@@ -229,7 +231,7 @@ public abstract class BasePage implements InventoryHolder {
             case "returnPage":
                 returnButton(player);
                 return;
-        
+
             default:
                 break;
         }
@@ -239,11 +241,11 @@ public abstract class BasePage implements InventoryHolder {
     private boolean isInSlot(ItemSlotYML itemSlotYML, int slot) {
         if(itemSlotYML.getSlot() != null) {
             return itemSlotYML.getSlot() == slot;
-        } 
+        }
         return itemSlotYML.getSlots()[0] <= slot && itemSlotYML.getSlots()[1] >= slot;
     }
-    
+
     protected abstract void actionHandler(ItemSlotYML itemSlot,int slot, Player player, InventoryAction inventoryAction);
 
     protected abstract void render();
-} 
+}

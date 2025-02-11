@@ -17,15 +17,20 @@ import lombok.extern.slf4j.Slf4j;
 public class PageFactory {
 
     private PageFactory(){
-        
+
     }
     /**
-     * 
+     *
      * @param <T>
      * @param pageClass
      * @param parameters First the Owner(SuperPlayer)
      * @return
      */
+
+    public static <T extends BasePage> T createPage(Class<T> pageClass) {
+
+        return null;
+    }
     public static <T extends BasePage> T createPage(Class<T> pageClass, List<Object> parameters) {
         GuiYML guiYML = getGuiYML(pageClass);
         if (guiYML == null) {
@@ -43,18 +48,17 @@ public class PageFactory {
         }
         return null;
     }
-    
+
     private static GuiYML getGuiYML(Class<? extends BasePage> pageClass) {
         String[] folder = pageClass.getPackageName().split("\\.");
         int index = Arrays.asList(folder).indexOf("gui");
         String filename = "/gui/"  + folder[index + 1] + "/" + pageClass.getSimpleName() +".yml";
-        InputStream inputStream = pageClass.getClass().getResourceAsStream(filename);
+        InputStream inputStream = pageClass.getResourceAsStream(filename);
         if (inputStream == null) {
             log.error("GuiYML not Found " + filename);
             return null;
         }
         Yaml yaml = new Yaml(new Constructor(GuiYML.class, new LoaderOptions()));
         return yaml.load(inputStream);
-        
     }
 }

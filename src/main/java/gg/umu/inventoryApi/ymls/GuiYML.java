@@ -10,5 +10,6 @@ import lombok.Setter;
 public class GuiYML {
     private String name;
     private PageSize pageSize;
+    private boolean removable;
     private List<ItemSlotYML> itemSlots;
 }
