@@ -18,7 +18,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import com.destroystokyo.paper.profile.PlayerProfile;
 
-import gg.umu.inventoryApi.util.SuperPlayer;
 import gg.umu.inventoryApi.ymls.GuiYML;
 import gg.umu.inventoryApi.ymls.ItemSlotYML;
 import gg.umu.inventoryApi.ymls.StatesYML;
@@ -34,43 +33,48 @@ public abstract class BasePage implements InventoryHolder {
     private HashMap<Integer, String> slotStates = new HashMap<>();
     /**
      * @see
-     * add all u Content and then use the Call method :o
-    */
+     *      add all u Content and then use the Call method :o
+     */
     protected HashMap<Integer, PlayerProfile> playerProfiles = new HashMap<>();
-/*     protected HashMap<Integer,ItemDisplayModel> itemDisplays = new HashMap<>();  */
+    /*
+     * protected HashMap<Integer,ItemDisplayModel> itemDisplays = new HashMap<>();
+     */
     @Setter
     @Getter
-    protected SuperPlayer owner;
+    protected Object owner;
     protected int page = 0;
     protected int pageCount;
-    protected BasePage(GuiYML guiYML, SuperPlayer owner) {
+
+    protected BasePage(GuiYML guiYML, Object owner) {
         this.guiYML = guiYML;
         this.owner = owner;
-        if(guiYML.getName() != null) {
+        if (guiYML.getName() != null) {
             name = guiYML.getName();
         }
     }
 
     protected void createInventory() {
-        inventory = Bukkit.getServer().createInventory(this, guiYML.getPageSize().getValue() , name.toString());
+        inventory = Bukkit.getServer().createInventory(this, guiYML.getPageSize().getValue(), name.toString());
         loadDefault();
     }
 
     public boolean isRemovable() {
         return guiYML.isRemovable();
     }
+
     private <T> List<T> getSubList(List<T> list, int listSize) {
         int startInd = listSize * page;
         int endInd = startInd + listSize < list.size() ? startInd + listSize : list.size();
         return list.subList(startInd, endInd);
     }
-    //Used for for Lists Iterate trough them
+
+    // Used for for Lists Iterate trough them
     /**
      *
      * @param <T>
      * @param list
      * @param itemSlotYML
-     * @param callable (T item, int index)
+     * @param callable    (T item, int index)
      * @return return 0 null if it dont has an Item Slo
      */
     protected <T> int listHandler(List<T> list, ItemSlotYML itemSlotYML, ObjIntConsumer<T> callable) {
@@ -80,11 +84,24 @@ public abstract class BasePage implements InventoryHolder {
         int index = itemSlotYML.getSlots()[0];
         int listSize = (itemSlotYML.getSlots()[1] - itemSlotYML.getSlots()[0]) + 1;
         list = getSubList(list, listSize);
-        for(var item : list) {
+        for (var item : list) {
             callable.accept(item, index);
             index++;
         }
         return listSize;
+    }
+
+    protected void changeAmount(String action, int amount) {
+        var itemSlot = getItemSlot(action);
+        if (itemSlot == null) {
+            log.error(action + " : does not exist");
+            return;
+        }
+        if (itemSlot.getSlot() == null) {
+            log.error(action + " : works only with single slots");
+            return;
+        }
+        inventory.getItem(itemSlot.getSlot()).setAmount(amount);
     }
 
     public Inventory getInventory() {
@@ -99,7 +116,8 @@ public abstract class BasePage implements InventoryHolder {
     }
 
     protected ItemSlotYML getItemSlot(String action) {
-        Optional<ItemSlotYML> itemSlot = guiYML.getItemSlots().stream().filter(slot -> slot.getAction().equals(action)).findFirst();
+        Optional<ItemSlotYML> itemSlot = guiYML.getItemSlots().stream().filter(slot -> slot.getAction().equals(action))
+                .findFirst();
         if (itemSlot.isPresent()) {
             return itemSlot.get();
         }
@@ -108,24 +126,28 @@ public abstract class BasePage implements InventoryHolder {
         return null;
     }
 
-    protected ItemSlotYML getItemSlot(int slot) {
-        Optional<ItemSlotYML> itemSlot = guiYML.getItemSlots().stream().filter(item -> isInSlot(item, slot)).findFirst();
-        if (itemSlot.isPresent()) {
-            return itemSlot.get();
-        }
-        return null;
+    protected Optional<ItemSlotYML> getItemSlot(int slot) {
+        return guiYML.getItemSlots().stream().filter(item -> isInSlot(item, slot)).findFirst();
     }
 
+    /**
+     * Changes the state of a slot and updates the inventory.
+     * @param slot Slot number
+     * @param state New state
+     */
     protected void changeState(int slot, String state) {
-        ItemSlotYML itemSlot = getItemSlot(slot);
-        if(itemSlot.getStates().get(state) != null) {
+        getItemSlot(slot).ifPresentOrElse(itemSlot -> {
+            var states = itemSlot.getStates();
+            if (!states.containsKey(state)) {
+                log.error("State '{}' does not exist for slot {}", state, slot);
+                return;
+            }
             ItemStack itemStack = createItem(itemSlot, state);
             inventory.setItem(slot, itemStack);
             slotStates.replace(slot, state);
-            return;
-        }
-        log.error("State doesn't  exist " + state);
+        }, () -> log.error("Slot {} not found in getItemSlot", slot));
     }
+
     // has to be rewriten
     protected void renderPlayerProfile() {
         for (Map.Entry<Integer, PlayerProfile> entry : playerProfiles.entrySet()) {
@@ -140,23 +162,24 @@ public abstract class BasePage implements InventoryHolder {
         playerProfiles.clear();
     }
 
-/*     protected void renderItemDisplay() {
-        for (Map.Entry<Integer, ItemDisplayModel> entry : itemDisplays.entrySet()) {
-            ItemStack itemStack = inventory.getItem(entry.getKey());
-            if (itemStack != null) {
-                ItemMeta itemMeta = itemStack.getItemMeta();
-                itemMeta.displayName(entry.getValue().getName());
-                if (entry.getValue().getLore() != null) {
-                    itemMeta.lore(entry.getValue().getLore());
-                }
-                itemStack.setItemMeta(itemMeta);
-                inventory.setItem(entry.getKey(), itemStack);
-            }
-        }
-        itemDisplays.clear();
-    }
- */
-    //Handels the SiteLogic. Refreshs the page / with opening a new inventory
+    /*
+     * protected void renderItemDisplay() {
+     * for (Map.Entry<Integer, ItemDisplayModel> entry : itemDisplays.entrySet()) {
+     * ItemStack itemStack = inventory.getItem(entry.getKey());
+     * if (itemStack != null) {
+     * ItemMeta itemMeta = itemStack.getItemMeta();
+     * itemMeta.displayName(entry.getValue().getName());
+     * if (entry.getValue().getLore() != null) {
+     * itemMeta.lore(entry.getValue().getLore());
+     * }
+     * itemStack.setItemMeta(itemMeta);
+     * inventory.setItem(entry.getKey(), itemStack);
+     * }
+     * }
+     * itemDisplays.clear();
+     * }
+     */
+    // Handels the SiteLogic. Refreshs the page / with opening a new inventory
     private void buttonHandler(String button, Player player) {
         if (button.equals("nextPage") && page < pageCount - 1) {
             page++;
@@ -172,26 +195,25 @@ public abstract class BasePage implements InventoryHolder {
     private void returnButton(Player player) {
         Gui gui = Gui.getInstance();
         List<BasePage> history = gui.getHistories().get(player);
-        if (history.size() -2 > 0) {
-            gui.openPage(player, history.get(history.size() -2));
+        if (history.size() - 2 > 0) {
+            gui.openPage(player, history.get(history.size() - 2));
 
         }
     }
 
-    private ItemStack createItem(ItemSlotYML itemSlot,String state) {
+    private ItemStack createItem(ItemSlotYML itemSlot, String state) {
         StatesYML statesYML = itemSlot.getStates().get(state);
         ItemStack itemStack = new ItemStack(statesYML.getMaterial());
         ItemMeta itemMeta = itemStack.getItemMeta();
+
         if (statesYML.getAmount() != null) {
             itemStack.setAmount(statesYML.getAmount());
         }
-        if (statesYML.getName() != null) {
-            itemMeta.setDisplayName(statesYML.getName());
-        } else {
-            itemMeta.setDisplayName(" ");
-        }
+
+        itemMeta.setDisplayName(statesYML.getName() != null ? statesYML.getName() : " ");
+
         if (statesYML.isEnchantment()) {
-            itemMeta.addEnchant(Enchantment.LURE , 1 , false);
+            itemMeta.addEnchant(Enchantment.LURE, 1, false);
         }
         if (statesYML.getLore() != null) {
             itemMeta.setLore(statesYML.getLore().stream().map(Object::toString).toList());
@@ -203,14 +225,14 @@ public abstract class BasePage implements InventoryHolder {
     private void loadDefault() {
         for (ItemSlotYML itemSlot : guiYML.getItemSlots()) {
             final String state = "default";
-            if(itemSlot.getStates().containsKey(state)){
+            if (itemSlot.getStates().containsKey(state)) {
                 ItemStack itemStack = createItem(itemSlot, state);
                 if (itemSlot.getSlot() == null) {
                     for (int i = itemSlot.getSlots()[0]; i <= itemSlot.getSlots()[1]; i++) {
                         inventory.setItem(i, itemStack);
                         slotStates.put(i, state);
                     }
-                } else{
+                } else {
                     inventory.setItem(itemSlot.getSlot(), itemStack);
                     slotStates.put(itemSlot.getSlot(), state);
                 }
@@ -219,14 +241,16 @@ public abstract class BasePage implements InventoryHolder {
     }
 
     public void clickHandler(int slot, Player player, InventoryAction inventoryAction) {
-        ItemSlotYML itemSlot = getItemSlot(slot);
-        if (itemSlot == null) {
+        Optional<ItemSlotYML> optionalItemSlot = getItemSlot(slot);
+        if (optionalItemSlot.isEmpty()) {
             return;
         }
-        switch (itemSlot.getAction()) {
+        var itemSlot = optionalItemSlot.get();
+        String action = itemSlot.getAction();
+        switch (action) {
             case "nextPage":
             case "lastPage":
-                buttonHandler(itemSlot.getAction(), player);
+                buttonHandler(action, player);
                 return;
             case "returnPage":
                 returnButton(player);
@@ -239,13 +263,14 @@ public abstract class BasePage implements InventoryHolder {
     }
 
     private boolean isInSlot(ItemSlotYML itemSlotYML, int slot) {
-        if(itemSlotYML.getSlot() != null) {
+        if (itemSlotYML.getSlot() != null) {
             return itemSlotYML.getSlot() == slot;
         }
         return itemSlotYML.getSlots()[0] <= slot && itemSlotYML.getSlots()[1] >= slot;
     }
 
-    protected abstract void actionHandler(ItemSlotYML itemSlot,int slot, Player player, InventoryAction inventoryAction);
+    protected abstract void actionHandler(ItemSlotYML itemSlot, int slot, Player player,
+            InventoryAction inventoryAction);
 
     protected abstract void render();
 }

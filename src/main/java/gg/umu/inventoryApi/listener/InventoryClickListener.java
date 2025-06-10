@@ -26,3 +26,4 @@ public class InventoryClickListener implements Listener{
         page.clickHandler(event.getSlot(), player, event.getAction());
     }
 }
+ 
