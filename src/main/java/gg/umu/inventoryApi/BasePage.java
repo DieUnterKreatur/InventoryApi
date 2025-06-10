@@ -92,16 +92,13 @@ public abstract class BasePage implements InventoryHolder {
     }
 
     protected void changeAmount(String action, int amount) {
-        var itemSlot = getItemSlot(action);
-        if (itemSlot == null) {
-            log.error(action + " : does not exist");
-            return;
-        }
-        if (itemSlot.getSlot() == null) {
-            log.error(action + " : works only with single slots");
-            return;
-        }
-        inventory.getItem(itemSlot.getSlot()).setAmount(amount);
+        getItemSlot(amount).ifPresentOrElse(itemSlot -> {
+            if (itemSlot.getSlot() == null) {
+                log.error(action + " : works only with single slots");
+                return;
+            }
+            inventory.getItem(itemSlot.getSlot()).setAmount(amount);
+        }, () -> log.error("action {} not found in getItemSlot", action));
     }
 
     public Inventory getInventory() {
@@ -115,15 +112,9 @@ public abstract class BasePage implements InventoryHolder {
         return slotStates.get(slot);
     }
 
-    protected ItemSlotYML getItemSlot(String action) {
-        Optional<ItemSlotYML> itemSlot = guiYML.getItemSlots().stream().filter(slot -> slot.getAction().equals(action))
+    protected Optional<ItemSlotYML> getItemSlot(String action) {
+        return guiYML.getItemSlots().stream().filter(slot -> slot.getAction().equals(action))
                 .findFirst();
-        if (itemSlot.isPresent()) {
-            return itemSlot.get();
-        }
-
-        log.warn("Id not Found " + action + "in The YML");
-        return null;
     }
 
     protected Optional<ItemSlotYML> getItemSlot(int slot) {
@@ -132,7 +123,8 @@ public abstract class BasePage implements InventoryHolder {
 
     /**
      * Changes the state of a slot and updates the inventory.
-     * @param slot Slot number
+     *
+     * @param slot  Slot number
      * @param state New state
      */
     protected void changeState(int slot, String state) {
