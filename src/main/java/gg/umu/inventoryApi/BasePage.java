@@ -18,6 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import com.destroystokyo.paper.profile.PlayerProfile;
 
+import gg.umu.inventoryApi.util.ItemStackUtil;
 import gg.umu.inventoryApi.ymls.GuiYML;
 import gg.umu.inventoryApi.ymls.ItemSlotYML;
 import gg.umu.inventoryApi.ymls.StatesYML;
@@ -195,23 +196,7 @@ public abstract class BasePage implements InventoryHolder {
 
     private ItemStack createItem(ItemSlotYML itemSlot, String state) {
         StatesYML statesYML = itemSlot.getStates().get(state);
-        ItemStack itemStack = new ItemStack(statesYML.getMaterial());
-        ItemMeta itemMeta = itemStack.getItemMeta();
-
-        if (statesYML.getAmount() != null) {
-            itemStack.setAmount(statesYML.getAmount());
-        }
-
-        itemMeta.setDisplayName(statesYML.getName() != null ? statesYML.getName() : " ");
-
-        if (statesYML.isEnchantment()) {
-            itemMeta.addEnchant(Enchantment.LURE, 1, false);
-        }
-        if (statesYML.getLore() != null) {
-            itemMeta.setLore(statesYML.getLore().stream().map(Object::toString).toList());
-        }
-        itemStack.setItemMeta(itemMeta);
-        return itemStack;
+        return ItemStackUtil.createItemStack(statesYML);
     }
 
     private void loadDefault() {
