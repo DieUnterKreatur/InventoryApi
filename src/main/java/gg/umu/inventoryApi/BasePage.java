@@ -2,19 +2,15 @@ package gg.umu.inventoryApi;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.ObjIntConsumer;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import com.destroystokyo.paper.profile.PlayerProfile;
 
@@ -55,7 +51,7 @@ public abstract class BasePage implements InventoryHolder {
     }
 
     protected void createInventory() {
-        inventory = Bukkit.getServer().createInventory(this, guiYML.getPageSize().getValue(), name.toString());
+        inventory = Bukkit.getServer().createInventory(this, guiYML.getPageSize().getValue(), name);
         loadDefault();
     }
 
@@ -141,18 +137,19 @@ public abstract class BasePage implements InventoryHolder {
         }, () -> log.error("Slot {} not found in getItemSlot", slot));
     }
 
-    // has to be rewriten
     protected void renderPlayerProfile() {
-        for (Map.Entry<Integer, PlayerProfile> entry : playerProfiles.entrySet()) {
-            ItemStack itemStack = inventory.getItem(entry.getKey());
-            if (itemStack != null && itemStack.getType().equals(Material.SKULL_ITEM)) {
-                SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
-                skullMeta.setPlayerProfile(entry.getValue());
+        playerProfiles.forEach((id, playerProfile) -> {
+            var itemStack = inventory.getItem(id);
+            if (itemStack != null && itemStack.getItemMeta() instanceof SkullMeta skullMeta ) {
+                skullMeta.setPlayerProfile(playerProfile);
                 itemStack.setItemMeta(skullMeta);
-                inventory.setItem(entry.getKey(), itemStack);
+                inventory.setItem(id, itemStack);
             }
-        }
+        });
         playerProfiles.clear();
+    }
+
+    protected void renderItemDisplay(ItemStack itemStack) {
     }
 
     /*
