@@ -27,10 +27,7 @@ public class PageFactory {
      * @return
      */
 
-    public static <T extends BasePage> T createPage(Class<T> pageClass) {
 
-        return null;
-    }
     public static <T extends BasePage> T createPage(Class<T> pageClass, List<Object> parameters) {
         GuiYML guiYML = getGuiYML(pageClass);
         if (guiYML == null) {
